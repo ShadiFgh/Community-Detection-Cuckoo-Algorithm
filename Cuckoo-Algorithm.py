@@ -88,3 +88,83 @@ def modularity_property(graph, n, cuckoos):
     return np.array(profit)
 
 
+def spawning(cuckoos):
+    index = random.randint(0, num_cuckoos - 1)
+    cuckoo = cuckoos[index]
+    # number of eggs that the cuckoo has
+    num_eggs = random.randint(min_egg, max_egg)
+    for k in range(0, num_eggs):
+        i = random.randint(0, n - 1)
+        j = random.randint(0, n - 1)
+        if cuckoo[j] in find_neighbor(graph, n)[i]:
+            cuckoo[i] = cuckoo[j]
+    return cuckoo
+
+
+# def spawning(cuckoos, index):
+#     cuckoo = cuckoos[index]
+#     # number of eggs that the cuckoo has
+#     num_eggs = random.randint(min_egg, max_egg)
+#     for k in range(0, num_eggs):
+#         i = random.randint(0, n - 1)
+#         j = random.randint(0, n - 1)
+#         if cuckoo[j] in find_neighbor(graph, n)[i]:
+#             cuckoo[i] = cuckoo[j]
+#     return cuckoo
+
+
+def migration(cuckoos, profit):
+    max_profit_arg = np.argmax(profit)
+    target = cuckoos[max_profit_arg]
+    index = random.randint(0, num_cuckoos + num_spawning - 1)
+    before_migration = cuckoos[index]
+    after_migration = []
+    random_vector = []
+    for i in range(0, n):
+        random_vector.append(random.choice([0, 1]))
+    for i in range(0, n):
+        if random_vector[i] == 0:
+            after_migration.append(target[i])
+        else:
+            after_migration.append(before_migration[i])
+    return after_migration
+
+
+
+cuckoos = create_habitat(graph, n, num_cuckoos)
+# profit = modularity_property(graph, n, cuckoos)
+max_profit = []
+for iter in range(0, max_iter):
+    for i in range(0, num_spawning):
+        cuckoos.append(spawning(cuckoos))
+
+    # for i in range(0, num_cuckoos):
+    #     cuckoos.append(spawning(cuckoos, i))
+
+    for i in range(0, num_migrate):
+        profit1 = modularity_property(graph, n, cuckoos)
+        cuckoos.append(migration(cuckoos, profit1))
+
+
+    profit = modularity_property(graph, n, cuckoos)
+    best_profit = max(profit)
+    print(best_profit)
+    max_profit.append(best_profit)
+    best_arg = np.argmax(profit)
+    best_cuckoo = cuckoos[best_arg]
+    profitarg = np.argsort(profit.reshape((1, num_cuckoos + num_spawning + num_migrate)))
+    # next generation's population
+    new_pop = []
+    for k in range(0, num_cuckoos):
+        temp = (total - 1) - k
+        new_pop.append(cuckoos[profitarg[0][temp]])
+    cuckoos = new_pop
+
+
+print("best cuckoo habitat:", best_cuckoo)
+print("best profit:", max(max_profit))
+
+x = np.array(range(0, max_iter))
+y = np.array(max_profit).reshape((1, len(max_profit)))[0]
+plt.plot(x, y, 'ro')
+plt.show()
